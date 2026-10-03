@@ -8,7 +8,6 @@ frontend/npm-debug.log*
 
 # Java / Spring Boot
 backend/target/
-backend/.mvn/
 backend/*.log
 
 # IDE files
