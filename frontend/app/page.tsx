@@ -1,69 +1,293 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+
+type Event = {
+  id: number;
+  title: string;
+  date: string;
+};
 
 export default function Home() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [error, setError] = useState("");
+
+  // Load all events from the backend
+  const loadEvents = async () => {
+    try {
+      setError("");
+
+      const response = await fetch(
+        "http://localhost:8080/api/events"
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to load events");
+      }
+
+      const data = await response.json();
+      setEvents(data);
+    } catch (error) {
+      console.error(error);
+      setError(
+        "Could not connect to the backend. Make sure Spring Boot is running."
+      );
+    }
+  };
+
+  // Add a new event
+  const addEvent = async () => {
+    if (!title || !date) {
+      setError("Please enter an event title and date.");
+      return;
+    }
+
+    try {
+      setError("");
+
+      const response = await fetch(
+        "http://localhost:8080/api/events",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: title,
+            date: date,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to add event");
+      }
+
+      setTitle("");
+      setDate("");
+
+      await loadEvents();
+    } catch (error) {
+      console.error(error);
+      setError("Could not add the event.");
+    }
+  };
+
+  // Start editing an event
+  const editEvent = (event: Event) => {
+    setEditingId(event.id);
+    setTitle(event.title);
+    setDate(event.date);
+    setError("");
+  };
+
+  // Update an existing event
+  const updateEvent = async () => {
+    if (editingId === null || !title || !date) {
+      setError("Please enter an event title and date.");
+      return;
+    }
+
+    try {
+      setError("");
+
+      const response = await fetch(
+        `http://localhost:8080/api/events/${editingId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: title,
+            date: date,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update event");
+      }
+
+      setEditingId(null);
+      setTitle("");
+      setDate("");
+
+      await loadEvents();
+    } catch (error) {
+      console.error(error);
+      setError("Could not update the event.");
+    }
+  };
+
+  // Delete an event
+  const deleteEvent = async (id: number) => {
+    try {
+      setError("");
+
+      const response = await fetch(
+        `http://localhost:8080/api/events/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete event");
+      }
+
+      // If we were editing the deleted event, clear the form
+      if (editingId === id) {
+        setEditingId(null);
+        setTitle("");
+        setDate("");
+      }
+
+      await loadEvents();
+    } catch (error) {
+      console.error(error);
+      setError("Could not delete the event.");
+    }
+  };
+
+  // Cancel editing
+  const cancelEdit = () => {
+    setEditingId(null);
+    setTitle("");
+    setDate("");
+    setError("");
+  };
+
+  // Load events when the page first opens
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <main className="min-h-screen bg-gray-100 p-8">
+      <div className="mx-auto max-w-4xl">
+        {/* Page Header */}
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900">
+            Event Manager
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <p className="mt-2 text-gray-600">
+            Create, edit, and manage your events.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+        </header>
+
+        {/* Add/Edit Event Form */}
+        <section className="mb-8 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-2xl font-semibold">
+            {editingId === null ? "Add Event" : "Edit Event"}
+          </h2>
+
+          <div className="flex flex-col gap-4">
+            {/* Event Title */}
+            <input
+              type="text"
+              placeholder="Event title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="rounded border border-gray-300 p-3 outline-none focus:border-black"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+            {/* Event Date */}
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="rounded border border-gray-300 p-3 outline-none focus:border-black"
+            />
+
+            {/* Form Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={
+                  editingId === null ? addEvent : updateEvent
+                }
+                className="rounded bg-black px-5 py-3 font-semibold text-white hover:bg-gray-800"
+              >
+                {editingId === null
+                  ? "Add Event"
+                  : "Update Event"}
+              </button>
+
+              {editingId !== null && (
+                <button
+                  onClick={cancelEdit}
+                  className="rounded border border-gray-300 px-5 py-3 font-semibold text-gray-700 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mt-4 rounded bg-red-100 p-3 text-red-700">
+              {error}
+            </div>
+          )}
+        </section>
+
+        {/* Events List */}
+        <section>
+          <h2 className="mb-4 text-2xl font-semibold">
+            Events
+          </h2>
+
+          {events.length === 0 ? (
+            <div className="rounded-lg bg-white p-6 shadow">
+              <p className="text-gray-600">
+                No events yet. Add your first event above.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {events.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex flex-col gap-4 rounded-lg bg-white p-5 shadow sm:flex-row sm:items-center sm:justify-between"
+                >
+                  {/* Event Information */}
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      {event.title}
+                    </h3>
+
+                    <p className="mt-2 text-gray-600">
+                      {event.date}
+                    </p>
+                  </div>
+
+                  {/* Event Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => editEvent(event)}
+                      className="rounded bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => deleteEvent(event.id)}
+                      className="rounded bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }
