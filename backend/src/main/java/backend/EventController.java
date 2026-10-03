@@ -1,20 +1,46 @@
 package backend;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import java.util.List;
 
 @RestController
 public class EventController {
 
+    private final EventRepository eventRepository;
+
+    public EventController(EventRepository eventRepository) {
+        this.eventRepository = eventRepository;
+    }
+
     @GetMapping("/api/events")
     public List<Event> getEvents() {
+        return eventRepository.findAll();
+    }
 
-        return List.of(
-            new Event(1L, "Study for exam", "2026-10-10"),
-            new Event(2L, "Team meeting", "2026-10-12"),
-            new Event(3L, "Finish project", "2026-10-15")
-        );
+    @PostMapping("/api/events")
+    public Event createEvent(@RequestBody Event event) {
+        return eventRepository.save(event);
+    }
+
+    @DeleteMapping("/api/events/{id}")
+    public void deleteEvent(@PathVariable Long id) {
+        eventRepository.deleteById(id);
+    }
+
+    @PutMapping("/api/events/{id}")
+    public Event updateEvent(@PathVariable Long id, @RequestBody Event event) {
+        Event existingEvent = eventRepository.findById(id).orElseThrow();
+
+        existingEvent.setTitle(event.getTitle());
+        existingEvent.setDate(event.getDate());
+
+        return eventRepository.save(existingEvent);
     }
 }
