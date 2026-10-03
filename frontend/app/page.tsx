@@ -24,9 +24,7 @@ export default function Home() {
     try {
       setError("");
 
-      const response = await fetch(
-        "http://localhost:8080/api/events"
-      );
+      const response = await fetch("http://localhost:8080/api/events");
 
       if (!response.ok) {
         throw new Error("Failed to load events");
@@ -42,28 +40,59 @@ export default function Home() {
     }
   };
 
+  const validateEvent = () => {
+    const trimmedTitle = title.trim();
+
+    if (!trimmedTitle) {
+      setError("Please enter an event title.");
+      return false;
+    }
+
+    if (!date) {
+      setError("Please select an event date.");
+      return false;
+    }
+
+    const selectedDate = new Date(`${date}T00:00:00`);
+
+    if (Number.isNaN(selectedDate.getTime())) {
+      setError("Please enter a valid date.");
+      return false;
+    }
+
+    const duplicate = events.some(
+      (event) =>
+        event.id !== editingId &&
+        event.title.trim().toLowerCase() === trimmedTitle.toLowerCase() &&
+        event.date === date
+    );
+
+    if (duplicate) {
+      setError("An event with this title already exists on this date.");
+      return false;
+    }
+
+    return true;
+  };
+
   const addEvent = async () => {
-    if (!title || !date) {
-      setError("Please enter an event title and date.");
+    setError("");
+
+    if (!validateEvent()) {
       return;
     }
 
     try {
-      setError("");
-
-      const response = await fetch(
-        "http://localhost:8080/api/events",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: title,
-            date: date,
-          }),
-        }
-      );
+      const response = await fetch("http://localhost:8080/api/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          date: date,
+        }),
+      });
 
       if (!response.ok) {
         throw new Error("Failed to add event");
@@ -87,14 +116,18 @@ export default function Home() {
   };
 
   const updateEvent = async () => {
-    if (editingId === null || !title || !date) {
-      setError("Please enter an event title and date.");
+    setError("");
+
+    if (editingId === null) {
+      setError("No event is currently being edited.");
+      return;
+    }
+
+    if (!validateEvent()) {
       return;
     }
 
     try {
-      setError("");
-
       const response = await fetch(
         `http://localhost:8080/api/events/${editingId}`,
         {
@@ -103,7 +136,7 @@ export default function Home() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            title: title,
+            title: title.trim(),
             date: date,
           }),
         }
@@ -172,8 +205,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-5xl">
-
-        {/* Header */}
         <header className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900">
             Event Manager
@@ -184,14 +215,12 @@ export default function Home() {
           </p>
         </header>
 
-        {/* Add/Edit Form */}
         <section className="mb-8 rounded-lg bg-white p-6 shadow">
           <h2 className="mb-4 text-2xl font-semibold">
             {editingId === null ? "Add Event" : "Edit Event"}
           </h2>
 
           <div className="flex flex-col gap-4">
-
             <input
               type="text"
               placeholder="Event title"
@@ -208,18 +237,11 @@ export default function Home() {
             />
 
             <div className="flex gap-3">
-
               <button
-                onClick={
-                  editingId === null
-                    ? addEvent
-                    : updateEvent
-                }
+                onClick={editingId === null ? addEvent : updateEvent}
                 className="rounded bg-black px-5 py-3 font-semibold text-white hover:bg-gray-800"
               >
-                {editingId === null
-                  ? "Add Event"
-                  : "Update Event"}
+                {editingId === null ? "Add Event" : "Update Event"}
               </button>
 
               {editingId !== null && (
@@ -230,9 +252,9 @@ export default function Home() {
                   Cancel
                 </button>
               )}
-
             </div>
           </div>
+
           {error && (
             <div className="mt-4 rounded bg-red-100 p-3 text-red-700">
               {error}
@@ -240,23 +262,14 @@ export default function Home() {
           )}
         </section>
 
-        {/* Calendar */}
         <section className="mb-8 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-6 text-2xl font-semibold">Calendar</h2>
 
-          <h2 className="mb-6 text-2xl font-semibold">
-            Calendar
-          </h2>
-
-	  <Calendar events={calendarEvents} />
-
+          <Calendar events={calendarEvents} />
         </section>
 
-        {/* Event List */}
         <section>
-
-          <h2 className="mb-4 text-2xl font-semibold">
-            Events
-          </h2>
+          <h2 className="mb-4 text-2xl font-semibold">Events</h2>
 
           {events.length === 0 ? (
             <div className="rounded-lg bg-white p-6 shadow">
@@ -266,13 +279,11 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-4">
-
               {events.map((event) => (
                 <div
                   key={event.id}
                   className="flex flex-col gap-4 rounded-lg bg-white p-5 shadow sm:flex-row sm:items-center sm:justify-between"
                 >
-
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">
                       {event.title}
@@ -284,7 +295,6 @@ export default function Home() {
                   </div>
 
                   <div className="flex gap-2">
-
                     <button
                       onClick={() => editEvent(event)}
                       className="rounded bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
@@ -298,17 +308,12 @@ export default function Home() {
                     >
                       Delete
                     </button>
-
                   </div>
-
                 </div>
               ))}
-
             </div>
           )}
-
         </section>
-
       </div>
     </main>
   );
