@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+
+const Calendar = dynamic(() => import("./components/Calendar"), {
+  ssr: false,
+});
 
 type Event = {
   id: number;
@@ -15,7 +20,6 @@ export default function Home() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
-  // Load all events from the backend
   const loadEvents = async () => {
     try {
       setError("");
@@ -38,7 +42,6 @@ export default function Home() {
     }
   };
 
-  // Add a new event
   const addEvent = async () => {
     if (!title || !date) {
       setError("Please enter an event title and date.");
@@ -76,7 +79,6 @@ export default function Home() {
     }
   };
 
-  // Start editing an event
   const editEvent = (event: Event) => {
     setEditingId(event.id);
     setTitle(event.title);
@@ -84,7 +86,6 @@ export default function Home() {
     setError("");
   };
 
-  // Update an existing event
   const updateEvent = async () => {
     if (editingId === null || !title || !date) {
       setError("Please enter an event title and date.");
@@ -123,7 +124,6 @@ export default function Home() {
     }
   };
 
-  // Delete an event
   const deleteEvent = async (id: number) => {
     try {
       setError("");
@@ -139,7 +139,6 @@ export default function Home() {
         throw new Error("Failed to delete event");
       }
 
-      // If we were editing the deleted event, clear the form
       if (editingId === id) {
         setEditingId(null);
         setTitle("");
@@ -153,7 +152,6 @@ export default function Home() {
     }
   };
 
-  // Cancel editing
   const cancelEdit = () => {
     setEditingId(null);
     setTitle("");
@@ -161,33 +159,39 @@ export default function Home() {
     setError("");
   };
 
-  // Load events when the page first opens
   useEffect(() => {
     loadEvents();
   }, []);
 
+  const calendarEvents = events.map((event) => ({
+    id: event.id.toString(),
+    title: event.title,
+    date: event.date,
+  }));
+
   return (
     <main className="min-h-screen bg-gray-100 p-8">
-      <div className="mx-auto max-w-4xl">
-        {/* Page Header */}
+      <div className="mx-auto max-w-5xl">
+
+        {/* Header */}
         <header className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900">
             Event Manager
           </h1>
 
           <p className="mt-2 text-gray-600">
-            Create, edit, and manage your events.
+            Create, edit, delete, and view your events.
           </p>
         </header>
 
-        {/* Add/Edit Event Form */}
+        {/* Add/Edit Form */}
         <section className="mb-8 rounded-lg bg-white p-6 shadow">
           <h2 className="mb-4 text-2xl font-semibold">
             {editingId === null ? "Add Event" : "Edit Event"}
           </h2>
 
           <div className="flex flex-col gap-4">
-            {/* Event Title */}
+
             <input
               type="text"
               placeholder="Event title"
@@ -196,7 +200,6 @@ export default function Home() {
               className="rounded border border-gray-300 p-3 outline-none focus:border-black"
             />
 
-            {/* Event Date */}
             <input
               type="date"
               value={date}
@@ -204,11 +207,13 @@ export default function Home() {
               className="rounded border border-gray-300 p-3 outline-none focus:border-black"
             />
 
-            {/* Form Buttons */}
             <div className="flex gap-3">
+
               <button
                 onClick={
-                  editingId === null ? addEvent : updateEvent
+                  editingId === null
+                    ? addEvent
+                    : updateEvent
                 }
                 className="rounded bg-black px-5 py-3 font-semibold text-white hover:bg-gray-800"
               >
@@ -225,10 +230,9 @@ export default function Home() {
                   Cancel
                 </button>
               )}
+
             </div>
           </div>
-
-          {/* Error Message */}
           {error && (
             <div className="mt-4 rounded bg-red-100 p-3 text-red-700">
               {error}
@@ -236,8 +240,20 @@ export default function Home() {
           )}
         </section>
 
-        {/* Events List */}
+        {/* Calendar */}
+        <section className="mb-8 rounded-lg bg-white p-6 shadow">
+
+          <h2 className="mb-6 text-2xl font-semibold">
+            Calendar
+          </h2>
+
+	  <Calendar events={calendarEvents} />
+
+        </section>
+
+        {/* Event List */}
         <section>
+
           <h2 className="mb-4 text-2xl font-semibold">
             Events
           </h2>
@@ -250,12 +266,13 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-4">
+
               {events.map((event) => (
                 <div
                   key={event.id}
                   className="flex flex-col gap-4 rounded-lg bg-white p-5 shadow sm:flex-row sm:items-center sm:justify-between"
                 >
-                  {/* Event Information */}
+
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">
                       {event.title}
@@ -266,8 +283,8 @@ export default function Home() {
                     </p>
                   </div>
 
-                  {/* Event Buttons */}
                   <div className="flex gap-2">
+
                     <button
                       onClick={() => editEvent(event)}
                       className="rounded bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
@@ -281,12 +298,17 @@ export default function Home() {
                     >
                       Delete
                     </button>
+
                   </div>
+
                 </div>
               ))}
+
             </div>
           )}
+
         </section>
+
       </div>
     </main>
   );
