@@ -1,0 +1,25 @@
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env
+frontend/.env.local
+frontend/npm-debug.log*
+
+# Java / Spring Boot
+backend/target/
+backend/.mvn/
+backend/*.log
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# macOS
+.DS_Store
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
